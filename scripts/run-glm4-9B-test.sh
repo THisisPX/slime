@@ -29,7 +29,7 @@ source "${SCRIPT_DIR}/models/glm4-9B.sh"
 CKPT_ARGS=(
    --hf-checkpoint /workspace/volume/pengxiong/models/GLM-Z1-9B-0414/
    --ref-load /workspace/volume/pengxiong/models/GLM-Z1-9B-0414_torch_dist
-   --load /workspace/volume/pengxiong/models/GLM-Z1-9B-0414_slime/
+   # --load /workspace/volume/pengxiong/models/GLM-Z1-9B-0414_slime/
    --save /workspace/volume/pengxiong/models/GLM-Z1-9B-0414_slime/
    --save-interval 20
 )
@@ -43,21 +43,21 @@ ROLLOUT_ARGS=(
 
    --rm-type deepscaler
 
-   --num-rollout 3000
-   --rollout-batch-size 32
-   --n-samples-per-prompt 8
-   --rollout-max-response-len 8192
+   --num-rollout 64
+   --rollout-batch-size 8
+   --n-samples-per-prompt 4
+   --rollout-max-response-len 1024
    --rollout-temperature 1
 
-   --global-batch-size 256
+   --global-batch-size 32
    --balance-data
 )
 
 EVAL_ARGS=(
    --eval-interval 20
    --eval-prompt-data aime /workspace/volume/pengxiong/datasets/aime-2024
-   --n-samples-per-eval-prompt 16
-   --eval-max-response-len 16384
+   --n-samples-per-eval-prompt 4
+   --eval-max-response-len 1024
    --eval-top-p 1
 )
 
@@ -75,7 +75,7 @@ PERF_ARGS=(
 
    # --micro-batch-size 1
    --use-dynamic-batch-size
-   --max-tokens-per-gpu 4608
+   --max-tokens-per-gpu 1024
 )
 
 GRPO_ARGS=(

@@ -31,43 +31,43 @@ fi
 NUM_GPUS=${NUM_GPUS:-${DETECTED_GPUS}}
 if [ -z "$NUM_GPUS" ] || [ "$NUM_GPUS" -le 0 ]; then
     NUM_GPUS=8
-fi
+fi 
 echo "NUM_GPUS: $NUM_GPUS"
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 source "${SCRIPT_DIR}/models/qwen3-4B.sh"
 
 CKPT_ARGS=(
-   --hf-checkpoint /root/Qwen3-4B
+   --hf-checkpoint /workspace/volume/distributed-training-softdata/models/Qwen3-4B
    #--hf-checkpoint /root/Qwen3-4B-FP8
-   --ref-load /root/Qwen3-4B_torch_dist
-   --load /root/Qwen3-4B_slime/
-   --save /root/Qwen3-4B_slime/
+   --ref-load /workspace/volume/pengxiong/models/qwen3-4B-torch
+   # --load /root/Qwen3-4B_slime/
+   --save /workspace/volume/pengxiong/models/Qwen3-4B_slime/
    --save-interval 20
 )
 
 ROLLOUT_ARGS=(
-   --prompt-data /root/dapo-math-17k/dapo-math-17k.jsonl
+   --prompt-data /workspace/volume/pengxiong/datasets/dapo-math-17k/dapo-math-17k.jsonl
    --input-key prompt
    --label-key label
    --apply-chat-template
    --rollout-shuffle
    --rm-type deepscaler
-   --num-rollout 3000
-   --rollout-batch-size 32
-   --n-samples-per-prompt 8
-   --rollout-max-response-len 8192
+   --num-rollout 64
+   --rollout-batch-size 8
+   --n-samples-per-prompt 4
+   --rollout-max-response-len 512
    --rollout-temperature 1
 
-   --global-batch-size 256
+   --global-batch-size 32
    --balance-data
 )
 
 EVAL_ARGS=(
    --eval-interval 20
-   --eval-prompt-data aime /root/aime-2024/aime-2024.jsonl
-   --n-samples-per-eval-prompt 16
-   --eval-max-response-len 16384
+   --eval-prompt-data aime /workspace/volume/pengxiong/datasets/aime-2024/aime-2024.jsonl
+   --n-samples-per-eval-prompt 2
+   --eval-max-response-len 512
    --eval-top-p 1
 )
 
@@ -85,7 +85,7 @@ PERF_ARGS=(
 
    # --micro-batch-size 1
    --use-dynamic-batch-size
-   --max-tokens-per-gpu 9216
+   --max-tokens-per-gpu 2048
 )
 
 GRPO_ARGS=(
