@@ -37,6 +37,7 @@ CKPT_ARGS=(
 
 ROLLOUT_ARGS=(
    --prompt-data /workspace/volume/pengxiong/datasets/dapo-math-17k/dapo-math-17k.jsonl
+   
    --input-key prompt
    --label-key label
    --apply-chat-template
