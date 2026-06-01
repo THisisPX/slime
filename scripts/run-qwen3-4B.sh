@@ -128,6 +128,8 @@ MISC_ARGS=(
    --attention-softmax-in-fp32
    # need to comment this when using model with MLA
    --attention-backend flash
+   --use-tensorboard
+   --tb-project-name qwen3-4b-perf-test
 )
 
 # launch the master node of ray in container
