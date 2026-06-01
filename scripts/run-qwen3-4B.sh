@@ -56,7 +56,9 @@ ROLLOUT_ARGS=(
    --num-rollout 64
    --rollout-batch-size 8
    --n-samples-per-prompt 4
-   --rollout-max-response-len 512
+   --rollout-max-response-len 2048
+   --rollout-system-prompt "Please reason step by
+  step, and put your final answer in \boxed{}."
    --rollout-temperature 1
 
    --global-batch-size 32

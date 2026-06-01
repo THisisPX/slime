@@ -56,14 +56,14 @@ ROLLOUT_ARGS=(
 
 EVAL_ARGS=(
    --eval-interval 20
-   --eval-prompt-data aime /workspace/volume/pengxiong/datasets/aime-2024
+   --eval-prompt-data aime /workspace/volume/pengxiong/datasets/aime-2024/aime-2024.jsonl
    --n-samples-per-eval-prompt 4
    --eval-max-response-len 1024
    --eval-top-p 1
 )
 
 PERF_ARGS=(
-   --tensor-model-parallel-size 4
+   --tensor-model-parallel-size 2
    --sequence-parallel
    --pipeline-model-parallel-size 1
    --expert-model-parallel-size 1
