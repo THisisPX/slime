@@ -104,9 +104,6 @@ WANDB_ARGS=(
    # --wandb-key ${WANDB_KEY}
 )
 
-SGLANG_ARGS=(
-   --rollout-num-gpus-per-engine 2
-)
 
 MISC_ARGS=(
    # default dropout in megatron is 0.1
@@ -121,6 +118,11 @@ MISC_ARGS=(
    # TensorBoard 记录性能指标
    --use-tensorboard
    --tb-project-name glm4-9b-perf-test
+)
+
+SGLANG_ARGS=(
+   --rollout-num-gpus-per-engine 2
+   --sglang-mem-fraction-static 0.3
 )
 
 # launch the master node of ray in container
@@ -140,8 +142,8 @@ ray job submit --address="http://127.0.0.1:8265" \
    --runtime-env-json="${RUNTIME_ENV_JSON}" \
    -- python3 train.py \
    --actor-num-nodes 1 \
-   --actor-num-gpus-per-node 4 \
-   --rollout-num-gpus 4 \
+   --actor-num-gpus-per-node 8 \
+   --colocate \
    ${MODEL_ARGS[@]} \
    ${CKPT_ARGS[@]} \
    ${ROLLOUT_ARGS[@]} \
