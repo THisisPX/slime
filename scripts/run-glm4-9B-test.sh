@@ -29,9 +29,10 @@ source "${SCRIPT_DIR}/models/glm4-9B.sh"
 CKPT_ARGS=(
    --hf-checkpoint /workspace/volume/pengxiong/models/GLM-Z1-9B-0414/
    --ref-load /workspace/volume/pengxiong/models/GLM-Z1-9B-0414_torch_dist
+   # 首次跑请不要 --load，会从 HF checkpoint 初始化
    # --load /workspace/volume/pengxiong/models/GLM-Z1-9B-0414_slime/
    --save /workspace/volume/pengxiong/models/GLM-Z1-9B-0414_slime/
-   --save-interval 20
+   --save-interval 1000
 )
 
 ROLLOUT_ARGS=(
@@ -46,7 +47,7 @@ ROLLOUT_ARGS=(
    --num-rollout 64
    --rollout-batch-size 8
    --n-samples-per-prompt 4
-   --rollout-max-response-len 1024
+   --rollout-max-response-len 2048
    --rollout-temperature 1
 
    --global-batch-size 32
@@ -65,7 +66,6 @@ PERF_ARGS=(
    --tensor-model-parallel-size 2
    --sequence-parallel
    --pipeline-model-parallel-size 1
-   --context-parallel-size 2
    --expert-model-parallel-size 1
    --expert-tensor-parallel-size 1
 
@@ -117,6 +117,10 @@ MISC_ARGS=(
    --attention-softmax-in-fp32
    # need to comment this when using model with MLA
    --attention-backend flash
+
+   # TensorBoard 记录性能指标
+   --use-tensorboard
+   --tb-project-name glm4-9b-perf-test
 )
 
 # launch the master node of ray in container
