@@ -28,7 +28,7 @@ set -ex
 export PYTHONBUFFERED=16
 
 # ==================== 路径配置 (请根据实际环境修改) ====================
-HF_CHECKPOINT="${HF_CHECKPOINT:-/workspace/volume/pengxiong/models/Qwen3-4B}"
+HF_CHECKPOINT="${HF_CHECKPOINT:-/workspace/volume/distributed-training-softdata/models/Qwen3-4B}"
 TORCH_DIST_CKPT="${TORCH_DIST_CKPT:-/workspace/volume/pengxiong/models/qwen3-4B-torch}"
 SAVE_DIR="${SAVE_DIR:-/workspace/volume/pengxiong/models/Qwen3-4B_slime}"
 PROMPT_DATA="${PROMPT_DATA:-/workspace/volume/pengxiong/datasets/dapo-math-17k/dapo-math-17k.jsonl}"
@@ -63,7 +63,7 @@ ROLLOUT_ARGS=(
    --num-rollout 3000
    --rollout-batch-size 8
    --n-samples-per-prompt 4
-   --rollout-max-response-len 4096
+   --rollout-max-response-len 2048
    --rollout-temperature 1
    --rollout-system-prompt "Please reason step by step, and put your final answer in \boxed{}."
 
@@ -75,7 +75,7 @@ EVAL_ARGS=(
    --eval-interval 100
    --eval-prompt-data aime "${EVAL_DATA}"
    --n-samples-per-eval-prompt 2
-   --eval-max-response-len 4096
+   --eval-max-response-len 2048
    --eval-top-p 1
 )
 
