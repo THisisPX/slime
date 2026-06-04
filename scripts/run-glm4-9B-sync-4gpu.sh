@@ -52,12 +52,12 @@ ROLLOUT_ARGS=(
    --rm-type deepscaler
 
    --num-rollout 3000
-   --rollout-batch-size 16
+   --rollout-batch-size 8
    --n-samples-per-prompt 4
-   --rollout-max-response-len 4096
+   --rollout-max-response-len 2048
    --rollout-temperature 1
 
-   --global-batch-size 64
+   --global-batch-size 32
    --balance-data
 )
 
@@ -83,12 +83,11 @@ PERF_ARGS=(
    --recompute-num-layers 1
 
    --use-dynamic-batch-size
-   --max-tokens-per-gpu 4096
+   --max-tokens-per-gpu 2048
 )
 
 GRPO_ARGS=(
    --advantage-estimator grpo
-   --use-kl-loss
    --kl-loss-coef 0.00
    --kl-loss-type low_var_kl
    --entropy-coef 0.00
@@ -116,7 +115,8 @@ WANDB_ARGS=(
 SGLANG_ARGS=(
    # 2 卡推理: 1 个引擎 × TP2
    --rollout-num-gpus-per-engine 2
-   --sglang-cuda-graph-max-bs 16
+   --sglang-mem-fraction-static 0.6
+   --sglang-cuda-graph-max-bs 8
 )
 
 MISC_ARGS=(
