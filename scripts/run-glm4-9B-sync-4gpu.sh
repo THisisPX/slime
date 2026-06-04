@@ -20,11 +20,11 @@ set -ex
 export PYTHONBUFFERED=16
 
 # ==================== 路径配置 (请根据实际环境修改) ====================
-HF_CHECKPOINT="${HF_CHECKPOINT:-/workspace/models/GLM-Z1-9B-0414}"
-TORCH_DIST_CKPT="${TORCH_DIST_CKPT:-/workspace/models/GLM-Z1-9B-0414_torch_dist}"
-SAVE_DIR="${SAVE_DIR:-/workspace/models/GLM-Z1-9B-0414_slime}"
-PROMPT_DATA="${PROMPT_DATA:-/workspace/datasets/dapo-math-17k/dapo-math-17k.jsonl}"
-EVAL_DATA="${EVAL_DATA:-/workspace/datasets/aime-2024/aime-2024.jsonl}"
+HF_CHECKPOINT="${HF_CHECKPOINT:-/workspace/volume/pengxiong/models/GLM-Z1-9B-0414}"
+TORCH_DIST_CKPT="${TORCH_DIST_CKPT:-/workspace/volume/pengxiong/models/GLM-Z1-9B-0414_torch_dist}"
+SAVE_DIR="${SAVE_DIR:-/workspace/volume/pengxiong/models/GLM-Z1-9B-0414_slime}"
+PROMPT_DATA="${PROMPT_DATA:-/workspace/volume/pengxiong/datasets/dapo-math-17k/dapo-math-17k.jsonl}"
+EVAL_DATA="${EVAL_DATA:-/workspace/volume/pengxiong/datasets/aime-2024/aime-2024.jsonl}"
 # =====================================================================
 
 # 检测 NVLink
