@@ -63,7 +63,7 @@ ROLLOUT_ARGS=(
    --num-rollout 3000
    --rollout-batch-size 8
    --n-samples-per-prompt 4
-   --rollout-max-response-len 4096
+   --rollout-max-response-len 8192
    --rollout-temperature 1
    --rollout-system-prompt "Please reason step by step, and put your final answer in \boxed{}."
 
@@ -75,7 +75,7 @@ EVAL_ARGS=(
    --eval-interval 100
    --eval-prompt-data aime "${EVAL_DATA}"
    --n-samples-per-eval-prompt 2
-   --eval-max-response-len 4096
+   --eval-max-response-len 8192
    --eval-top-p 1
 )
 
