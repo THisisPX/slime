@@ -60,7 +60,7 @@ ROLLOUT_ARGS=(
 
    --rm-type deepscaler
 
-   --num-rollout 64
+   --num-rollout 8
    --rollout-batch-size 8
    --n-samples-per-prompt 4
    --rollout-max-response-len 8192
