@@ -134,7 +134,7 @@ MISC_ARGS=(
    --attention-softmax-in-fp32
    --attention-backend flash
    --use-tensorboard
-   --tb-project-name qwen3-4b-perf-test-8gpu
+   --tb-project-name qwen3-4b-async-8gpu
 )
 
 # ==================== 启动 Ray + 提交任务 ====================

@@ -133,6 +133,8 @@ MISC_ARGS=(
    --accumulate-allreduce-grads-in-fp32
    --attention-softmax-in-fp32
    --attention-backend flash
+   --use-tensorboard
+   --tb-project-name qwen3-4b-async-4gpu
 )
 
 # ==================== 启动 Ray + 提交任务 ====================
