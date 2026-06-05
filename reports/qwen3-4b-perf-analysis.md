@@ -1,5 +1,113 @@
 # Qwen3-4B GRPO 性能分析报告 (n_samples=16)
 
+## 复现方式
+
+### 数据准备
+
+```bash
+# 下载模型
+huggingface-cli download Qwen/Qwen3-4B --local-dir /workspace/models/Qwen3-4B
+
+# 下载数据集
+huggingface-cli download zhuzilin/dapo-math-17k --local-dir /workspace/datasets/dapo-math-17k
+huggingface-cli download zhuzilin/aime-2024 --local-dir /workspace/datasets/aime-2024
+
+# 转换 checkpoint 为 Megatron torch_dist 格式
+python tools/convert_hf_to_torch_dist.py \
+  --hf-checkpoint /workspace/models/Qwen3-4B \
+  --model-type qwen3-4B --tp-size 2 --num-gpus-per-node 4 \
+  --output /workspace/models/qwen3-4B-torch
+```
+
+### 执行训练
+
+```bash
+bash scripts/run-qwen3-4B-async-8gpu.sh
+```
+
+### 查看结果
+
+```bash
+tensorboard --logdir tensorboard_log/ --port 6006
+```
+
+## 训练日志
+
+| 模式 | n_samples | TensorBoard 路径 | 内容 |
+|------|-----------|-----------------|------|
+| 异步 | 4 (旧) | `tensorboard_log/qwen3-4b-perf-test-8gpu/20260605_00261[5,6]` | rollout/train metrics |
+| 异步 | 16 | `tensorboard_log/qwen3-4b-perf-test-8gpu/20260605_01461[3,5]` | rollout/train metrics |
+
+## 参数设置说明
+
+完整参数见 `scripts/run-qwen3-4B-async-8gpu.sh`，关键参数说明：
+
+### 硬件分配
+
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| `--actor-num-nodes` | 1 | 训练使用 1 个节点 |
+| `--actor-num-gpus-per-node` | 4 | 训练使用 4 卡 (TP2 × DP2) |
+| `--rollout-num-gpus` | 4 | 推理使用 4 卡 (2 引擎 × TP2) |
+| `--rollout-num-gpus-per-engine` | 2 | 每个 SGLang 引擎 2 卡 (TP2) |
+
+### 并行策略 (Megatron)
+
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| `--tensor-model-parallel-size` | 2 | 张量并行 2 路，权重切分到 2 卡 |
+| `--sequence-parallel` | ✓ | 序列并行，分散 LayerNorm/Dropout 显存 |
+| `--pipeline-model-parallel-size` | 1 | 流水线并行关闭（4B 模型不需要） |
+| `--context-parallel-size` | 1 | 上下文并行关闭 |
+| `--recompute-granularity full` + `--recompute-method uniform` | ✓ | 全重计算，每层 checkpoint，用显存换计算 |
+| `--use-dynamic-batch-size` | ✓ | 动态 micro-batch，按 token 数打包 |
+| `--max-tokens-per-gpu` | 4096 | 每 GPU 最多 4096 token（控制激活显存） |
+
+### 数据 & Rollout
+
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| `--prompt-data` | dapo-math-17k.jsonl | 数学推理训练集 |
+| `--input-key` / `--label-key` | prompt / label | 数据中 prompt 和答案的字段名 |
+| `--apply-chat-template` | ✓ | 使用 Qwen3 chat template 格式化 |
+| `--loss-mask-type` | qwen3 | 只对 assistant 回复部分计算 loss |
+| `--rm-type` | deepscaler | 使用 DeepScaler 规则提取答案并判分 |
+| `--num-rollout` | 8 | 跑 8 轮 rollout（测试用，正式训练改 3000+） |
+| `--rollout-batch-size` | 8 | 每轮生成 8 个 prompt group |
+| `--n-samples-per-prompt` | 16 | 每个 prompt 生成 16 条回答（GRPO 组大小） |
+| `--rollout-max-response-len` | 8192 | 回答最大 token 数 |
+| `--global-batch-size` | 32 | 全局 batch 大小（DP 分片） |
+
+### GRPO 算法
+
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| `--advantage-estimator` | grpo | 使用 GRPO 优势估计 |
+| `--kl-loss-coef` | 0.00 | KL 散度惩罚系数为 0（不使用 ref 模型） |
+| `--eps-clip` / `--eps-clip-high` | 0.2 / 0.28 | PPO ratio 裁剪范围 [0.8, 1.28] |
+| `--entropy-coef` | 0.00 | 熵奖励系数（0=不额外加熵项） |
+| `--rewards-normalization` | ✓ (默认) | 组内均值归一化 |
+| `--grpo-std-normalization` | ✓ (默认) | 组内标准差归一化（Dr.GRPO） |
+
+### 优化器
+
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| `--optimizer` | adam | Adam 优化器 |
+| `--lr` | 1e-6 | 学习率 1×10⁻⁶ |
+| `--lr-decay-style` | constant | 恒定学习率 |
+| `--weight-decay` | 0.1 | 权重衰减 |
+| `--adam-beta1` / `--adam-beta2` | 0.9 / 0.98 | Adam 动量参数 |
+
+### 推理引擎 (SGLang)
+
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| `--sglang-mem-fraction-static` | 0.7 | SGLang 最多使用 70% GPU 显存 |
+| `--sglang-cuda-graph-max-bs` | 16 | CUDA graph 最大 batch size |
+
+---
+
 ## 实验配置
 
 | 项目 | 配置 |

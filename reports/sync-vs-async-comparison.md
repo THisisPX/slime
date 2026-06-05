@@ -1,5 +1,110 @@
 # Qwen3-4B 同步 vs 异步训练对比报告
 
+## 复现方式
+
+### 数据准备
+
+```bash
+# 下载模型
+huggingface-cli download Qwen/Qwen3-4B --local-dir /workspace/models/Qwen3-4B
+
+# 下载数据集
+huggingface-cli download zhuzilin/dapo-math-17k --local-dir /workspace/datasets/dapo-math-17k
+huggingface-cli download zhuzilin/aime-2024 --local-dir /workspace/datasets/aime-2024
+
+# 转换 checkpoint 为 Megatron torch_dist 格式
+python tools/convert_hf_to_torch_dist.py \
+  --hf-checkpoint /workspace/models/Qwen3-4B \
+  --model-type qwen3-4B --tp-size 2 --num-gpus-per-node 4 \
+  --output /workspace/models/qwen3-4B-torch
+```
+
+### 执行训练
+
+```bash
+# 异步模式
+bash scripts/run-qwen3-4B-async-8gpu.sh
+
+# 同步模式
+bash scripts/run-qwen3-4B-sync-8gpu.sh
+```
+
+### 查看结果
+
+```bash
+tensorboard --logdir tensorboard_log/ --port 6006
+```
+
+## 训练日志
+
+| 模式 | n_samples | TensorBoard 路径 | 内容 |
+|------|-----------|-----------------|------|
+| 异步 | 16 | `tensorboard_log/qwen3-4b-perf-test-8gpu/20260605_01461[3,5]` | rollout + train metrics |
+| 同步 | 16 | `tensorboard_log/qwen3-4b-sync-8gpu/20260605_024931` | rollout metrics |
+| 同步 | 16 | `tensorboard_log/qwen3-4b-sync-8gpu/20260605_025354` | train metrics |
+
+## 参数设置说明
+
+同步和异步使用相同的训练参数，差异仅在于入口 `train.py` vs `train_async.py`。完整参数见 `scripts/run-qwen3-4B-{sync,async}-8gpu.sh`。
+
+### 硬件分配
+
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| `--actor-num-nodes` | 1 | 训练 1 节点 |
+| `--actor-num-gpus-per-node` | 4 | 训练 4 卡 (TP2 × DP2) |
+| `--rollout-num-gpus` | 4 | 推理 4 卡 (2 引擎 × TP2) |
+| `--rollout-num-gpus-per-engine` | 2 | 每引擎 TP2 |
+
+### 并行策略 (Megatron)
+
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| `--tensor-model-parallel-size` | 2 | 张量并行，权重切分到 2 卡 |
+| `--sequence-parallel` | ✓ | 序列并行，分散 LayerNorm/Dropout |
+| `--recompute-granularity full` + `--recompute-method uniform` | ✓ | 全重计算，用显存换计算 |
+| `--use-dynamic-batch-size` | ✓ | 动态 micro-batch 打包 |
+| `--max-tokens-per-gpu` | 4096 | 每 GPU token 上限 |
+
+### 数据 & Rollout
+
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| `--prompt-data` | dapo-math-17k.jsonl | 数学推理训练集 |
+| `--loss-mask-type` | qwen3 | 只对 assistant 回复计算 loss |
+| `--rm-type` | deepscaler | DeepScaler 规则判分 |
+| `--num-rollout` | 8 | 测试用，正式训练改 3000+ |
+| `--rollout-batch-size` | 8 | 每轮 8 个 prompt group |
+| `--n-samples-per-prompt` | 16 | GRPO 组大小 |
+| `--rollout-max-response-len` | 8192 | 回答最大 token 数 |
+| `--global-batch-size` | 32 | 全局 batch 大小 |
+
+### GRPO 算法
+
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| `--advantage-estimator` | grpo | GRPO 优势估计 |
+| `--eps-clip` / `--eps-clip-high` | 0.2 / 0.28 | PPO ratio 裁剪 [0.8, 1.28] |
+| `--kl-loss-coef` | 0.00 | 不使用 ref 模型 |
+| `--entropy-coef` | 0.00 | 不额外加熵奖励 |
+| `--rewards-normalization` | ✓ (默认) | 组内均值归一化 |
+| `--grpo-std-normalization` | ✓ (默认) | 组内标准差归一化 |
+
+### 异步独有参数
+
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| `--update-weights-interval` | 1 | 每 1 步同步权重到 rollout 引擎 |
+
+### 推理引擎 (SGLang)
+
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| `--sglang-mem-fraction-static` | 0.7 | 使用 70% GPU 显存 |
+| `--sglang-cuda-graph-max-bs` | 16 | CUDA graph 最大 batch size |
+
+---
+
 ## 实验配置
 
 | 项目 | 同步 | 异步 |
@@ -8,7 +113,7 @@
 | 硬件 | 8× A100 (训练 TP2+DP2 / 推理 2引擎×TP2) | 同 |
 | 模型 | Qwen3-4B | 同 |
 | 算法 | GRPO, n_samples=16, max-response=8192 | 同 |
-| 日志 | `qwen3-4b-sync-8gpu` | `qwen3-4b-async-8gpu` |
+| 运行 | 8 rollout steps + 32 train steps | 同 |
 
 ---
 
