@@ -1,15 +1,22 @@
 #!/bin/bash
 # ==============================================================================
-# Qwen3-4B 同步训练 — 8× A100 colocate 模式
+# Qwen3-4B 同步训练 — 8× A100 40GB colocate 模式 (对齐 verl 配置)
 #
-# GPU 分配: 8 卡全用于训练+推理 (colocate), TP4
-# 使用 train.py (同步 rollout → train → update_weights 循环)
+# GPU 分配: 8 卡 colocate (训练+推理共享, offload 切换)
+# 训练: TP2 × DP4 (=8卡)
+# 推理: 4 引擎 × TP2
 #
-# Colocate 特点:
-#   - 训练和推理共享同一组 GPU，通过 --offload 在 CPU/GPU 间切换
-#   - TP 可以更大 (TP4)，训练每卡显存压力更小
-#   - 无需单独分配 rollout GPU
-#   - 只支持同步模式 (train.py)
+# 与 verl run_qwen3_4b_megatron_perf_test.sh 对齐:
+#   - TP2 (verl: ACTOR_TP=2)
+#   - n_samples=16 (verl: ROLLOUT_N=16)
+#   - 8 rollout × 8 batch × 16 samples = 128 样本/步
+#   - loss_agg: slime 用 sum-of-sample-mean, verl 用 token-mean (数值不同, 梯度方向一致)
+#
+# slime vs verl 关键差异 (预期影响对比结果):
+#   - 推理引擎: SGLang vs vLLM
+#   - 推理 CUDA graph: slime 开启, verl enforce_eager=True 关闭
+#   - 并行度: slime max_running_requests ≈ 无限制, verl max_num_seqs=32
+#   - max_tokens_per_gpu: slime=4096 vs verl=12288 (A100 40G 限制)
 # ==============================================================================
 
 # 清理残留进程
@@ -45,7 +52,7 @@ CKPT_ARGS=(
    --hf-checkpoint "${HF_CHECKPOINT}"
    --ref-load "${TORCH_DIST_CKPT}"
    --save "${SAVE_DIR}"
-   --save-interval 100
+   --save-interval 9999        # 对齐 verl: 不做 checkpoint
 )
 
 ROLLOUT_ARGS=(
@@ -58,6 +65,7 @@ ROLLOUT_ARGS=(
 
    --rm-type deepscaler
 
+   # 对齐 verl: train_batch_size=8, rollout.n=16
    --num-rollout 8
    --rollout-batch-size 8
    --n-samples-per-prompt 16
@@ -65,12 +73,16 @@ ROLLOUT_ARGS=(
    --rollout-temperature 1
    --rollout-system-prompt "Please reason step by step, and put your final answer in \boxed{}."
 
+   # 对齐 verl: PPO_MINI_BATCH_SIZE=8
    --global-batch-size 32
    --balance-data
+
+   # 对齐 verl: 不做 eval/val
+   --eval-interval 9999
 )
 
+# 保留 eval 配置但不触发 (对齐 verl test_freq=9999)
 EVAL_ARGS=(
-   --eval-interval 100
    --eval-prompt-data aime "${EVAL_DATA}"
    --n-samples-per-eval-prompt 2
    --eval-max-response-len 8192
@@ -78,33 +90,38 @@ EVAL_ARGS=(
 )
 
 PERF_ARGS=(
-   # 8 卡 colocate: TP4 × DP2
-   --tensor-model-parallel-size 4
+   # 对齐 verl: TP2, PP1 → DP=4 (8卡)
+   --tensor-model-parallel-size 2
    --sequence-parallel
    --pipeline-model-parallel-size 1
    --context-parallel-size 1
    --expert-model-parallel-size 1
    --expert-tensor-parallel-size 1
 
+   # 对齐 verl: full recompute, uniform, 1 layer
    --recompute-granularity full
    --recompute-method uniform
    --recompute-num-layers 1
 
    --use-dynamic-batch-size
-   # colocate 模式下训练和推理共享显存，需要降低 max-tokens
-   --max-tokens-per-gpu 2048
+   # 对齐 verl: PPO_MAX_TOKEN_LEN_PER_GPU=12288
+   # 注意: A100 40G 可能 OOM, 先从 4096 开始测
+   --max-tokens-per-gpu 4096
 )
 
 GRPO_ARGS=(
+   # 对齐 verl: grpo, no KL, no entropy
    --advantage-estimator grpo
    --kl-loss-coef 0.00
    --kl-loss-type low_var_kl
    --entropy-coef 0.00
+   # 对齐 verl: clip_ratio_low=0.2, clip_ratio_high=0.28
    --eps-clip 0.2
    --eps-clip-high 0.28
 )
 
 OPTIMIZER_ARGS=(
+   # 对齐 verl: Adam, lr=1e-6, constant, wd=0.1, betas=[0.9,0.98]
    --optimizer adam
    --lr 1e-6
    --lr-decay-style constant
@@ -115,15 +132,18 @@ OPTIMIZER_ARGS=(
 
 WANDB_ARGS=(
    #--use-wandb
-   #--wandb-project slime-qwen3-4B-sync-colocate
+   #--wandb-project slime-vs-verl
    #--wandb-key ${WANDB_KEY}
 )
 
 SGLANG_ARGS=(
-   # colocate 推理: 4 个引擎 × TP2 (与训练共享 GPU)
+   # 4 引擎 × TP2 (=8卡 inference)
    --rollout-num-gpus-per-engine 2
-   # 限制 SGLang 显存占比，给训练留空间
-   --sglang-mem-fraction-static 0.35
+   # A100 40G: 推理和训练共享, 限制推理显存
+   --sglang-mem-fraction-static 0.4
+   # 对齐 verl: max_num_seqs=32
+   --sglang-max-running-requests 32
+   # slime 默认开 CUDA graph (verl enforce_eager=True 关闭)
    --sglang-cuda-graph-max-bs 8
 )
 
@@ -134,7 +154,7 @@ MISC_ARGS=(
    --attention-softmax-in-fp32
    --attention-backend flash
    --use-tensorboard
-   --tb-project-name qwen3-4b-sync-colocate-8gpu
+   --tb-project-name slime-vs-verl-colocate-8gpu
 )
 
 # ==================== 启动 Ray + 提交任务 ====================
