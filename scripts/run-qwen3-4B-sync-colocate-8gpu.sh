@@ -3,7 +3,7 @@
 # Qwen3-4B 同步训练 — 8× A100 40GB colocate 模式 (对齐 verl 配置)
 #
 # GPU 分配: 8 卡 colocate (训练+推理共享, offload 切换)
-# 训练: TP2 × DP4 (=8卡)
+# 训练: TP4 × DP2 (=8卡)   ← A100 40G 下 TP2 OOM, 改用 TP4
 # 推理: 4 引擎 × TP2
 #
 # 与 verl run_qwen3_4b_megatron_perf_test.sh 对齐:
@@ -91,7 +91,8 @@ EVAL_ARGS=(
 
 PERF_ARGS=(
    # 对齐 verl: TP2, PP1 → DP=4 (8卡)
-   --tensor-model-parallel-size 2
+   # 但 A100 40G 下 TP2 显存不够, 改用 TP4 → DP=2
+   --tensor-model-parallel-size 4
    --sequence-parallel
    --pipeline-model-parallel-size 1
    --context-parallel-size 1
@@ -104,8 +105,8 @@ PERF_ARGS=(
    --recompute-num-layers 1
 
    --use-dynamic-batch-size
-   # 对齐 verl: PPO_MAX_TOKEN_LEN_PER_GPU=12288
-   --max-tokens-per-gpu 8192
+   # A100 40G colocate: 训练+推理共享显存, 必须降低 token 数
+   --max-tokens-per-gpu 2048
 )
 
 GRPO_ARGS=(
@@ -138,8 +139,8 @@ WANDB_ARGS=(
 SGLANG_ARGS=(
    # 4 引擎 × TP2 (=8卡 inference)
    --rollout-num-gpus-per-engine 2
-   # A100 40G: 推理和训练共享, 限制推理显存
-   --sglang-mem-fraction-static 0.4
+   # A100 40G: 推理和训练共享, 严格限制推理显存
+   --sglang-mem-fraction-static 0.35
    # 对齐 verl: max_num_seqs=32
    --sglang-max-running-requests 32
    # slime 默认开 CUDA graph (verl enforce_eager=True 关闭)
