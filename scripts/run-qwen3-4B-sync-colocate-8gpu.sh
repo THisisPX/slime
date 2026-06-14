@@ -105,8 +105,7 @@ PERF_ARGS=(
 
    --use-dynamic-batch-size
    # 对齐 verl: PPO_MAX_TOKEN_LEN_PER_GPU=12288
-   # 注意: A100 40G 可能 OOM, 先从 4096 开始测
-   --max-tokens-per-gpu 4096
+   --max-tokens-per-gpu 8192
 )
 
 GRPO_ARGS=(
