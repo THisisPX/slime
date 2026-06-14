@@ -169,6 +169,13 @@ RUNTIME_ENV_JSON="{
   }
 }"
 
+# 日志目录
+LOG_DIR="${LOG_DIR:-logs/slime-vs-verl-colocate-8gpu}"
+mkdir -p "${LOG_DIR}"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+LOG_FILE="${LOG_DIR}/train_${TIMESTAMP}.log"
+echo "Logging to: ${LOG_FILE}"
+
 ray job submit --address="http://127.0.0.1:8265" \
    --runtime-env-json="${RUNTIME_ENV_JSON}" \
    -- python3 train.py \
@@ -184,4 +191,5 @@ ray job submit --address="http://127.0.0.1:8265" \
    ${PERF_ARGS[@]} \
    ${EVAL_ARGS[@]} \
    ${SGLANG_ARGS[@]} \
-   ${MISC_ARGS[@]}
+   ${MISC_ARGS[@]} \
+   2>&1 | tee "${LOG_FILE}"
