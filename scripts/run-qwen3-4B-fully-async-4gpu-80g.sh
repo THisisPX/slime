@@ -86,9 +86,6 @@ ROLLOUT_ARGS=(
    # 对齐 verl: ppo_mini_batch_size=8
    --global-batch-size 32
    --balance-data
-
-   # 不做 eval
-   --eval-interval 9999
 )
 
 PERF_ARGS=(
