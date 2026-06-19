@@ -57,8 +57,6 @@ source "${SCRIPT_DIR}/models/qwen3-4B.sh"
 CKPT_ARGS=(
    --hf-checkpoint "${HF_CHECKPOINT}"
    --ref-load "${TORCH_DIST_CKPT}"
-   --save "${SAVE_DIR}"
-   --save-interval 9999        # 性能测试: 不做 checkpoint
 )
 
 ROLLOUT_ARGS=(
@@ -169,8 +167,7 @@ RUNTIME_ENV_JSON="{
   \"env_vars\": {
     \"PYTHONPATH\": \"/root/Megatron-LM/:${FULLY_ASYNC_DIR}\",
     \"CUDA_DEVICE_MAX_CONNECTIONS\": \"1\",
-    \"NCCL_NVLS_ENABLE\": \"${HAS_NVLINK}\",
-    \"PYTORCH_CUDA_ALLOC_CONF\": \"expandable_segments:True\"
+    \"NCCL_NVLS_ENABLE\": \"${HAS_NVLINK}\"
   }
 }"
 
