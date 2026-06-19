@@ -139,9 +139,9 @@ SGLANG_ARGS=(
    --rollout-num-gpus-per-engine 2
    # 对齐 verl: ROLLOUT_GPU_MEM_UTIL=0.7 (80G 充裕)
    --sglang-mem-fraction-static 0.7
-   # 对齐 verl: max_num_seqs=32
-   --sglang-max-running-requests 32
-   --sglang-cuda-graph-max-bs 16
+   # 降低并发避免 KV cache OOM: 32 并发 × 8192 token = KV cache 太大
+   --sglang-max-running-requests 16
+   --sglang-cuda-graph-max-bs 8
 )
 
 MISC_ARGS=(
@@ -169,7 +169,8 @@ RUNTIME_ENV_JSON="{
   \"env_vars\": {
     \"PYTHONPATH\": \"/root/Megatron-LM/:${FULLY_ASYNC_DIR}\",
     \"CUDA_DEVICE_MAX_CONNECTIONS\": \"1\",
-    \"NCCL_NVLS_ENABLE\": \"${HAS_NVLINK}\"
+    \"NCCL_NVLS_ENABLE\": \"${HAS_NVLINK}\",
+    \"PYTORCH_CUDA_ALLOC_CONF\": \"expandable_segments:True\"
   }
 }"
 
