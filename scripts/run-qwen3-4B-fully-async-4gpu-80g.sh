@@ -81,8 +81,9 @@ ROLLOUT_ARGS=(
    --rollout-temperature 1
    --rollout-system-prompt "Please reason step by step, and put your final answer in \boxed{}."
 
-   # 对齐 verl: ppo_mini_batch_size=8
-   --global-batch-size 32
+   # 必须够大: DP=1 时 128 才能有 8 groups/step
+   # 32 只能 2 groups/step, 42% 步全 zero_std → loss≈0
+   --global-batch-size 128
    --balance-data
 )
 
