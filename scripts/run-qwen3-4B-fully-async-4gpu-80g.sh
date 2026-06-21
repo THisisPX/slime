@@ -139,8 +139,8 @@ SGLANG_ARGS=(
    --rollout-num-gpus-per-engine 2
    # 对齐 verl: ROLLOUT_GPU_MEM_UTIL=0.7 (80G 充裕)
    --sglang-mem-fraction-static 0.7
-   # 降低并发避免 KV cache OOM: 32 并发 × 8192 token = KV cache 太大
-   --sglang-max-running-requests 16
+   # 降低并发避免 KV cache OOM 和长时间运行崩溃
+   --sglang-max-running-requests 8
    --sglang-cuda-graph-max-bs 8
 )
 
@@ -152,6 +152,10 @@ MISC_ARGS=(
    --attention-backend flash
    --use-tensorboard
    --tb-project-name slime-vs-verl-async-80g
+
+   # fully_async 长时间运行: 放宽健康检查避免误杀引擎
+   --rollout-health-check-interval 60
+   --rollout-health-check-timeout 120
 )
 
 # ==================== 启动 Ray + 提交任务 ====================
