@@ -102,8 +102,9 @@ PERF_ARGS=(
    --recompute-num-layers 1
 
    --use-dynamic-batch-size
-   # 对齐 verl: PPO_MAX_TOKEN_LEN_PER_GPU=16384 (80G 充裕)
-   --max-tokens-per-gpu 16384
+   # 对齐 verl: PPO_MAX_TOKEN_LEN_PER_GPU=16384 (但 slime dynamic_batch 会超过)
+   # 降到 9216 避免训练 OOM (TP2 每卡 47GB + 激活)
+   --max-tokens-per-gpu 9216
 )
 
 GRPO_ARGS=(
