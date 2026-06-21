@@ -112,9 +112,10 @@ GRPO_ARGS=(
    --kl-loss-coef 0.00
    --kl-loss-type low_var_kl
    --entropy-coef 0.00
-   # 对齐 verl: clip_ratio_low=0.2, clip_ratio_high=0.28
+   # 对齐 verl: clip_ratio_low=0.2, clip_ratio_high=0.28, clip_ratio_c=10.0
    --eps-clip 0.2
    --eps-clip-high 0.28
+   --eps-clip-c 10.0
 )
 
 OPTIMIZER_ARGS=(
