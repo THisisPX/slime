@@ -57,7 +57,8 @@ CKPT_ARGS=(
 # ============================================================================
 
 # 对齐 verl: TOTAL_ROLLOUT_STEPS=128
-# slime: num_rollout × rollout_batch_size = 16 × 8 = 128 prompts
+# slime: num_rollout × rollout_batch_size = 32 × 4 = 128 prompts
+# 小 batch_size 避免单次 rollout 压崩 SGLang 引擎
 # 对齐 verl: N_RESP_PER_PROMPT=16, MAX_RESPONSE_LENGTH=8192
 ROLLOUT_ARGS=(
    --prompt-data "${PROMPT_DATA}"
@@ -69,8 +70,8 @@ ROLLOUT_ARGS=(
 
    --rm-type deepscaler
 
-   --num-rollout 16
-   --rollout-batch-size 8
+   --num-rollout 32
+   --rollout-batch-size 4
    --n-samples-per-prompt 16
    --rollout-max-response-len 8192
    --rollout-temperature 1
@@ -133,7 +134,7 @@ WANDB_ARGS=(
 SGLANG_ARGS=(
    --rollout-num-gpus-per-engine 2
    --sglang-mem-fraction-static 0.7
-   --sglang-max-running-requests 16
+   --sglang-max-running-requests 8
    --sglang-cuda-graph-max-bs 8
 )
 
@@ -145,6 +146,10 @@ MISC_ARGS=(
    --attention-backend flash
    --use-tensorboard
    --tb-project-name slime-vs-verl-async-80g
+
+   # async 长时间运行: 放宽健康检查, 避免误杀引擎
+   --rollout-health-check-interval 60
+   --rollout-health-check-timeout 300
 )
 
 # ==================== 启动 Ray + 提交任务 ====================
