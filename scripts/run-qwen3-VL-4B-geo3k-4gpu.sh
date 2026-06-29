@@ -30,7 +30,7 @@ set -ex
 export PYTHONBUFFERED=16
 
 # ==================== 路径配置 (请根据实际环境修改) ====================
-HF_CHECKPOINT="${HF_CHECKPOINT:-/workspace/volume/pengxiong/models/Qwen3-VL-4B-Instruct}"
+HF_CHECKPOINT="${HF_CHECKPOINT:-/workspace/volume/distributed-training-softdata/models/Qwen3-VL-4B-Instruct}"
 SAVE_DIR="${SAVE_DIR:-/workspace/volume/pengxiong/models/Qwen3-VL-4B_slime_geo3k}"
 PROMPT_DATA_DIR="${PROMPT_DATA_DIR:-/workspace/volume/pengxiong/datasets}"
 DATASET_NAME="${DATASET_NAME:-chenhegu/geo3k_imgurl}"
@@ -42,11 +42,8 @@ NVLINK_COUNT=$(nvidia-smi topo -m 2>/dev/null | grep -o 'NV[0-9][0-9]*' | wc -l 
 HAS_NVLINK=$([ "$NVLINK_COUNT" -gt 0 ] && echo 1 || echo 0)
 echo "HAS_NVLINK: $HAS_NVLINK (detected $NVLINK_COUNT NVLink references)"
 
-# 下载模型和数据集
-mkdir -p /workspace/models /workspace/datasets
-if [ ! -d "${HF_CHECKPOINT}" ]; then
-   hf download Qwen/Qwen3-VL-4B-Instruct --local-dir "${HF_CHECKPOINT}"
-fi
+# 下载数据集
+mkdir -p "${PROMPT_DATA_DIR}"
 if [ ! -d "${PROMPT_DATA_DIR}/${DATASET_LOCAL_NAME}" ]; then
    hf download --repo-type dataset "${DATASET_NAME}" --local-dir "${PROMPT_DATA_DIR}/${DATASET_LOCAL_NAME}"
 fi
@@ -134,12 +131,7 @@ OPTIMIZER_ARGS=(
    --adam-beta2 0.98
 )
 
-WANDB_ARGS=(
-   #--use-wandb
-   #--wandb-project slime-qwen3-vl-4B-geo3k
-   #--wandb-key ${WANDB_KEY}
-   #--disable-wandb-random-suffix
-)
+# 仅使用 TensorBoard，不使用 Wandb
 
 SGLANG_ARGS=(
    # 2 卡推理: 1 个引擎 × TP2
@@ -202,7 +194,6 @@ ray job submit --address="http://127.0.0.1:8265" \
    ${GRPO_ARGS[@]} \
    ${OPTIMIZER_ARGS[@]} \
    ${SGLANG_ARGS[@]} \
-   ${WANDB_ARGS[@]} \
    ${PERF_ARGS[@]} \
    ${MISC_ARGS[@]} \
    2>&1 | tee "${LOG_FILE}"
