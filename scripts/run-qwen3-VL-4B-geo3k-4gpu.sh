@@ -139,6 +139,8 @@ SGLANG_ARGS=(
    --sglang-mem-fraction-static 0.7
    # B300/Blackwell 兼容性: 不支持 fa3, 多模态注意力使用 SDPA
    --sglang-mm-attention-backend sdpa
+   # B300/Blackwell 兼容性: 关闭 CUDA graph, PyTorch/SGLang kernels 未编译 sm_103a 支持
+   --sglang-disable-cuda-graph
 )
 
 MISC_ARGS=(
@@ -170,7 +172,8 @@ RUNTIME_ENV_JSON="{
     \"PYTHONPATH\": \"/root/Megatron-LM/\",
     \"CUDA_DEVICE_MAX_CONNECTIONS\": \"1\",
     \"NCCL_NVLS_ENABLE\": \"${HAS_NVLINK}\",
-    \"TRITON_PTXAS_PATH\": \"/usr/local/cuda/bin/ptxas\"
+    \"TRITON_PTXAS_PATH\": \"/usr/local/cuda/bin/ptxas\",
+    \"TORCH_CUDA_ARCH_LIST\": \"10.0\"
   }
 }"
 
