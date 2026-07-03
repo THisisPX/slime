@@ -59,6 +59,7 @@ MODEL_ARGS_ROTARY_BASE=5000000 source "${SCRIPT_DIR}/models/qwen3-4B.sh"
 
 CKPT_ARGS=(
    --hf-checkpoint "${HF_CHECKPOINT}"
+   --ref-load "${HF_CHECKPOINT}"
    --save "${SAVE_DIR}"
    --save-interval 100
 )
