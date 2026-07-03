@@ -3,10 +3,9 @@
 # Qwen3-VL-4B-Instruct GEO3K RL 训练 — 4× GPU (分卡模式) — v2
 #
 # v2 相比 v1 的改进 (基于训练分析):
-#   1. KL 正则化: kl_loss_coef 0.00 → 0.01, 防止模型偏离初始策略太远
-#   2. 增加 group 内样本数: n-samples-per-prompt 4 → 8, 减少 zero-std 组比例
-#   3. 限制回复长度: max-response-len 4096 → 3072, 抑制长度膨胀
-#   4. 减小 rollout-batch-size: 32 → 16 (配合 n_samples 翻倍, 总样本量不变)
+#   1. 增加 group 内样本数: n-samples-per-prompt 4 → 8, 减少 zero-std 组比例
+#   2. 限制回复长度: max-response-len 4096 → 3072, 抑制长度膨胀
+#   3. 减小 rollout-batch-size: 32 → 16 (配合 n_samples 翻倍, 总样本量不变)
 #
 # GPU 分配: 训练 2 卡 (TP2, DP1) + 推理 2 卡 (TP2, 1 engine) = 共 4 卡
 # 使用 train.py (同步 rollout → train → update_weights 循环)
@@ -59,7 +58,6 @@ MODEL_ARGS_ROTARY_BASE=5000000 source "${SCRIPT_DIR}/models/qwen3-4B.sh"
 
 CKPT_ARGS=(
    --hf-checkpoint "${HF_CHECKPOINT}"
-   --ref-load "${HF_CHECKPOINT}"
    --save "${SAVE_DIR}"
    --save-interval 100
 )
@@ -117,10 +115,8 @@ PERF_ARGS=(
 
 GRPO_ARGS=(
    --advantage-estimator grpo
-   # v2: KL 正则化防止策略偏离, 减缓回复长度膨胀
-   --kl-loss-coef 0.01
+   --kl-loss-coef 0.00
    --kl-loss-type low_var_kl
-   --kl-coef 0.01
    --entropy-coef 0.00
    --eps-clip 0.2
    --eps-clip-high 0.28
