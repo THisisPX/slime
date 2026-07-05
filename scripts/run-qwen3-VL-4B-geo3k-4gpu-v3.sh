@@ -72,9 +72,9 @@ ROLLOUT_ARGS=(
    --rollout-shuffle
    --loss-mask-type qwen3
 
-   # v3: dapo reward (1/-1 替代 0/1, 增加组内方差)
-   --rm-type dapo
-   --reward-key score
+   # dapo RM 要求整数答案，GEO3K 答案是 LaTeX (如 \sqrt{21})，不兼容。
+   # 使用 math RM（支持 LaTeX 公式比较），配合 500 rollouts 补偿 0/1 梯度弱的问题
+   --rm-type math
 
    # rollout-batch-size 16 × n-samples 8 = 128 样本/rollout
    --num-rollout 500
