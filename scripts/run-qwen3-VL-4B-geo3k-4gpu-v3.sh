@@ -78,7 +78,7 @@ ROLLOUT_ARGS=(
 
    # v3: rollout-batch-size 8 × n-samples 16 = 128 样本/rollout (总样本量不变)
    #     group 内现在有 16 个样本 (v2 仅 8), 显著降低 zero-std 组比例
-   --num-rollout 100
+   --num-rollout 500
    --rollout-batch-size 8
    --n-samples-per-prompt 16
    --rollout-max-response-len 3072
