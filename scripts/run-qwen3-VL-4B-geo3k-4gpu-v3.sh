@@ -76,11 +76,10 @@ ROLLOUT_ARGS=(
    --rm-type dapo
    --reward-key score
 
-   # v3: rollout-batch-size 8 × n-samples 16 = 128 样本/rollout (总样本量不变)
-   #     group 内现在有 16 个样本 (v2 仅 8), 显著降低 zero-std 组比例
+   # rollout-batch-size 16 × n-samples 8 = 128 样本/rollout
    --num-rollout 500
-   --rollout-batch-size 8
-   --n-samples-per-prompt 16
+   --rollout-batch-size 16
+   --n-samples-per-prompt 8
    --rollout-max-response-len 3072
    --rollout-temperature 0.8
 
