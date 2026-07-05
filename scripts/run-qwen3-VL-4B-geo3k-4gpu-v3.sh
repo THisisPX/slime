@@ -176,7 +176,8 @@ RUNTIME_ENV_JSON="{
     \"CUDA_DEVICE_MAX_CONNECTIONS\": \"1\",
     \"NCCL_NVLS_ENABLE\": \"${HAS_NVLINK}\",
     \"TRITON_PTXAS_PATH\": \"/usr/local/cuda/bin/ptxas\",
-    \"TORCH_CUDA_ARCH_LIST\": \"10.0\"
+    \"TORCH_CUDA_ARCH_LIST\": \"10.0\",
+    \"PYTORCH_CUDA_ALLOC_CONF\": \"expandable_segments:True\"
   }
 }"
 
