@@ -161,6 +161,9 @@ MISC_ARGS=(
 )
 
 # ==================== 启动 Ray + 提交任务 ====================
+# 共享环境: 通过 CUDA_VISIBLE_DEVICES 选择使用的 GPU
+# 例如 CUDA_VISIBLE_DEVICES=0,1,2,3 bash scripts/run-qwen3-VL-4B-geo3k-4gpu-v3.sh
+export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0,1,2,3}
 export MASTER_ADDR=${MASTER_ADDR:-"127.0.0.1"}
 export no_proxy="127.0.0.1,${MASTER_ADDR}"
 ray start --head \

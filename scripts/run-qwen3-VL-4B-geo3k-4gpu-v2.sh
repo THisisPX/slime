@@ -158,6 +158,7 @@ MISC_ARGS=(
 )
 
 # ==================== 启动 Ray + 提交任务 ====================
+export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0,1,2,3}
 export MASTER_ADDR=${MASTER_ADDR:-"127.0.0.1"}
 export no_proxy="127.0.0.1,${MASTER_ADDR}"
 ray start --head \
